@@ -1,0 +1,17 @@
+<nav class="navbar">
+  <div class="navbar-container">
+    <div class="navbar-logo">
+      <a routerLink="/">Covoiturage App</a>
+    </div>
+
+    <div class="navbar-menu">
+      @if (isAuthenticated()) {
+        <span class="user-welcome">Bienvenue, {{ currentUser?.username }}</span>
+        <a routerLink="/profile" class="nav-link">Profil</a>
+        <button (click)="onLogout()" class="logout-btn">Déconnexion</button>
+      } @else {
+        <a routerLink="/auth" class="nav-link">Connexion / Inscription</a>
+      }
+    </div>
+  </div>
+</nav>

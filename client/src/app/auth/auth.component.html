@@ -1,0 +1,121 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h2>{{ isLoginMode ? 'Connexion' : 'Inscription' }}</h2>
+      <div class="auth-tabs">
+        <button [class.active]="isLoginMode" (click)="isLoginMode = true">Connexion</button>
+        <button [class.active]="!isLoginMode" (click)="isLoginMode = false">Inscription</button>
+      </div>
+    </div>
+
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="successMessage" class="success-message">
+      {{ successMessage }}
+    </div>
+
+    <!-- Login Form -->
+    <form *ngIf="isLoginMode" [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth-form">
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input
+          type="email"
+          id="login-email"
+          formControlName="email"
+          placeholder="Votre email"
+        >
+        <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" class="validation-error">
+          <span *ngIf="loginForm.get('email')?.errors?.['required']">Email est obligatoire</span>
+          <span *ngIf="loginForm.get('email')?.errors?.['email']">Format d'email invalide</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="login-password">Mot de passe</label>
+        <input
+          type="password"
+          id="login-password"
+          formControlName="password"
+          placeholder="Votre mot de passe"
+        >
+        <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="validation-error">
+          <span *ngIf="loginForm.get('password')?.errors?.['required']">Mot de passe est obligatoire</span>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="loginForm.invalid || isLoading"
+        class="auth-button"
+      >
+        {{ isLoading ? 'Connexion en cours...' : 'Se connecter' }}
+      </button>
+    </form>
+
+    <!-- Register Form -->
+    <form *ngIf="!isLoginMode" [formGroup]="registerForm" (ngSubmit)="onRegister()" class="auth-form">
+      <div class="form-group">
+        <label for="register-username">Nom d'utilisateur</label>
+        <input
+          type="text"
+          id="register-username"
+          formControlName="username"
+          placeholder="Choisir un nom d'utilisateur"
+        >
+        <div *ngIf="registerForm.get('username')?.invalid && registerForm.get('username')?.touched" class="validation-error">
+          <span *ngIf="registerForm.get('username')?.errors?.['required']">Nom d'utilisateur est obligatoire</span>
+          <span *ngIf="registerForm.get('username')?.errors?.['minlength']">Nom d'utilisateur doit avoir au moins 3 caractères</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="register-email">Email</label>
+        <input
+          type="email"
+          id="register-email"
+          formControlName="email"
+          placeholder="Votre email"
+        >
+        <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" class="validation-error">
+          <span *ngIf="registerForm.get('email')?.errors?.['required']">Email est obligatoire</span>
+          <span *ngIf="registerForm.get('email')?.errors?.['email']">Format d'email invalide</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="register-password">Mot de passe</label>
+        <input
+          type="password"
+          id="register-password"
+          formControlName="password"
+          placeholder="Choisir un mot de passe"
+        >
+        <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" class="validation-error">
+          <span *ngIf="registerForm.get('password')?.errors?.['required']">Mot de passe est obligatoire</span>
+          <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Mot de passe doit avoir au moins 6 caractères</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="register-role">Rôle</label>
+        <select
+          id="register-role"
+          formControlName="role"
+        >
+          <option value="passager">Passager</option>
+          <option value="conducteur">Conducteur</option>
+        </select>
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="registerForm.invalid || isLoading"
+        class="auth-button"
+      >
+        {{ isLoading ? 'Inscription en cours...' : "S'inscrire" }}
+      </button>
+    </form>
+  </div>
+</div>

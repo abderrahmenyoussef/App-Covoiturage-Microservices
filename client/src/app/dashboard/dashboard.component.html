@@ -1,0 +1,48 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Tableau de bord</h1>
+    <p>Bienvenue dans votre espace personnel de covoiturage</p>
+  </div>
+
+  @if (currentUser) {
+    <div class="user-info-card">
+      <div class="user-info-header">
+        <h2>Informations personnelles</h2>
+      </div>
+      <div class="user-info-content">
+        <div class="info-row">
+          <span class="info-label">Nom d'utilisateur:</span>
+          <span class="info-value">{{ currentUser.username }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Email:</span>
+          <span class="info-value">{{ currentUser.email }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Rôle:</span>
+          <span class="info-value">{{ currentUser.role === 'conducteur' ? 'Conducteur' : 'Passager' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-actions">
+      @if (currentUser.role === 'conducteur') {
+        <div class="action-card">
+          <h3>Conducteur</h3>
+          <p>Vous pouvez proposer des trajets aux autres utilisateurs.</p>
+          <button class="btn btn-primary">Proposer un trajet</button>
+        </div>
+      } @else {
+        <div class="action-card">
+          <h3>Passager</h3>
+          <p>Vous pouvez rechercher et réserver des trajets.</p>
+          <button class="btn btn-primary">Rechercher un trajet</button>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="loading-container">
+      <p>Chargement de vos informations...</p>
+    </div>
+  }
+</div>
