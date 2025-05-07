@@ -1,48 +1,322 @@
 <div class="dashboard-container">
   <div class="dashboard-header">
-    <h1>Tableau de bord</h1>
-    <p>Bienvenue dans votre espace personnel de covoiturage</p>
-  </div>
-
-  @if (currentUser) {
-    <div class="user-info-card">
-      <div class="user-info-header">
-        <h2>Informations personnelles</h2>
+    <div class="welcome-section">
+      <div class="welcome-text">
+        <h1>Bienvenue sur <span class="brand-name">RhoumaCouvoiturage</span></h1>
+        <p *ngIf="currentUser">{{ greetingMessage }} <strong>{{ currentUser.username }}</strong></p>
+        <p *ngIf="!currentUser">Votre plateforme de covoiturage écologique et économique</p>
       </div>
-      <div class="user-info-content">
-        <div class="info-row">
-          <span class="info-label">Nom d'utilisateur:</span>
-          <span class="info-value">{{ currentUser.username }}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Email:</span>
-          <span class="info-value">{{ currentUser.email }}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Rôle:</span>
-          <span class="info-value">{{ currentUser.role === 'conducteur' ? 'Conducteur' : 'Passager' }}</span>
-        </div>
+      <div class="header-illustration">
+        <i class="fas fa-car-side"></i>
       </div>
     </div>
 
-    <div class="dashboard-actions">
+    <div class="search-box">
+      <div class="search-form">
+        <div class="form-group">
+          <label><i class="fas fa-map-marker-alt departure-icon"></i> Départ</label>
+          <input type="text" [(ngModel)]="searchDeparture" placeholder="Ville de départ" class="search-input">
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-map-marker-alt arrival-icon"></i> Arrivée</label>
+          <input type="text" [(ngModel)]="searchArrival" placeholder="Ville d'arrivée" class="search-input">
+        </div>
+        <div class="form-group">
+          <label><i class="fas fa-calendar-alt"></i> Date</label>
+          <input type="date" [(ngModel)]="searchDate" class="search-input">
+        </div>
+        <button class="search-button" (click)="searchRides()">
+          <i class="fas fa-search"></i> Rechercher
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-stats">
+    <div class="stat-card">
+      <div class="stat-icon eco">
+        <i class="fas fa-leaf"></i>
+      </div>
+      <div class="stat-info">
+        <h3>Écologie</h3>
+        <p class="stat-value">{{ ecoStats.co2Saved }} kg</p>
+        <p class="stat-label">CO₂ économisé</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon users">
+        <i class="fas fa-users"></i>
+      </div>
+      <div class="stat-info">
+        <h3>Communauté</h3>
+        <p class="stat-value">{{ communityStats.activeUsers }}+</p>
+        <p class="stat-label">Utilisateurs actifs</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon routes">
+        <i class="fas fa-route"></i>
+      </div>
+      <div class="stat-info">
+        <h3>Trajets</h3>
+        <p class="stat-value">{{ routeStats.sharedRides }}+</p>
+        <p class="stat-label">Trajets partagés</p>
+      </div>
+    </div>
+  </div>
+
+  @if (currentUser) {
+    <div class="user-dashboard">
+      <div class="dashboard-section user-info">
+        <div class="section-header">
+          <h2><i class="fas fa-user-circle"></i> Profil</h2>
+          <button class="btn-edit"><i class="fas fa-pen"></i> Modifier</button>
+        </div>
+        <div class="section-content">
+          <div class="profile-card">
+            <div class="profile-avatar">
+              <i class="fas fa-user"></i>
+              <span class="status-badge" [class.driver]="currentUser.role === 'conducteur'">
+                {{ currentUser.role === 'conducteur' ? 'Conducteur' : 'Passager' }}
+              </span>
+            </div>
+            <div class="profile-info">
+              <div class="info-row">
+                <span class="info-label"><i class="fas fa-id-card"></i> Nom d'utilisateur</span>
+                <span class="info-value">{{ currentUser.username }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label"><i class="fas fa-envelope"></i> Email</span>
+                <span class="info-value">{{ currentUser.email }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label"><i class="fas fa-star"></i> Note</span>
+                <span class="info-value">
+                  <i class="fas fa-star star-filled"></i>
+                  <i class="fas fa-star star-filled"></i>
+                  <i class="fas fa-star star-filled"></i>
+                  <i class="fas fa-star star-filled"></i>
+                  <i class="fas fa-star-half-alt star-filled"></i>
+                  <span class="rating-text">4.5/5</span>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label"><i class="fas fa-check-circle"></i> Compte vérifié</span>
+                <span class="info-value verification-badge">
+                  <i class="fas fa-check-circle verified-icon"></i> Vérifié
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       @if (currentUser.role === 'conducteur') {
-        <div class="action-card">
-          <h3>Conducteur</h3>
-          <p>Vous pouvez proposer des trajets aux autres utilisateurs.</p>
-          <button class="btn btn-primary">Proposer un trajet</button>
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h2><i class="fas fa-car"></i> Vos trajets proposés</h2>
+            <button class="btn-primary" (click)="proposeRide()"><i class="fas fa-plus"></i> Proposer un trajet</button>
+          </div>
+          <div class="section-content">
+            <div class="rides-grid">
+              @for (ride of driverRides; track ride.id) {
+                <div class="ride-card">
+                  <div class="ride-date">
+                    <span class="day">{{ getDay(ride.date) }}</span>
+                    <span class="month">{{ getMonthName(ride.date) }}</span>
+                  </div>
+                  <div class="ride-details">
+                    <div class="ride-route">
+                      <span class="departure">{{ ride.departure }}</span>
+                      <i class="fas fa-long-arrow-alt-right"></i>
+                      <span class="arrival">{{ ride.arrival }}</span>
+                    </div>
+                    <div class="ride-time">
+                      <i class="far fa-clock"></i> Départ à {{ ride.time }}
+                    </div>
+                    <div class="ride-price">
+                      <i class="fas fa-tag"></i> {{ ride.price }}€ par personne
+                    </div>
+                    <div class="ride-seats">
+                      <i class="fas fa-users"></i> {{ ride.availableSeats }} place{{ ride.availableSeats > 1 ? 's' : '' }} disponible{{ ride.availableSeats > 1 ? 's' : '' }}
+                    </div>
+                  </div>
+                  <div class="ride-actions">
+                    <button class="btn-edit-small" (click)="editRide(ride)"><i class="fas fa-edit"></i></button>
+                    <button class="btn-delete-small" (click)="deleteRide(ride)"><i class="fas fa-trash"></i></button>
+                  </div>
+                </div>
+              }
+              <div class="add-ride-card" (click)="proposeRide()">
+                <div class="add-ride-content">
+                  <i class="fas fa-plus-circle"></i>
+                  <span>Proposer un nouveau trajet</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       } @else {
-        <div class="action-card">
-          <h3>Passager</h3>
-          <p>Vous pouvez rechercher et réserver des trajets.</p>
-          <button class="btn btn-primary">Rechercher un trajet</button>
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h2><i class="fas fa-search"></i> Trajets disponibles</h2>
+            <div class="filter-controls">
+              <button class="btn-filter">
+                <i class="fas fa-filter"></i> Filtrer
+              </button>
+              <select class="sort-select">
+                <option value="date">Trier par date</option>
+                <option value="price">Trier par prix</option>
+                <option value="distance">Trier par distance</option>
+              </select>
+            </div>
+          </div>
+          <div class="section-content">
+            <div class="rides-grid">
+              @for (ride of availableRides; track ride.id) {
+                <div class="ride-card clickable">
+                  <div class="ride-date">
+                    <span class="day">{{ getDay(ride.date) }}</span>
+                    <span class="month">{{ getMonthName(ride.date) }}</span>
+                  </div>
+                  <div class="ride-details">
+                    <div class="ride-route">
+                      <span class="departure">{{ ride.departure }}</span>
+                      <i class="fas fa-long-arrow-alt-right"></i>
+                      <span class="arrival">{{ ride.arrival }}</span>
+                    </div>
+                    <div class="ride-time">
+                      <i class="far fa-clock"></i> Départ à {{ ride.time }}
+                    </div>
+                    <div class="driver-info">
+                      <i class="fas fa-user-circle"></i> {{ ride.driverName }}
+                      <div class="driver-rating">
+                        <i class="fas fa-star"></i> {{ ride.driverRating }}
+                      </div>
+                    </div>
+                    <div class="ride-price">
+                      <i class="fas fa-tag"></i> {{ ride.price }}€ par personne
+                    </div>
+                  </div>
+                  <div class="ride-actions">
+                    <button class="btn-reserve" (click)="reserveRide(ride)">Réserver</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
         </div>
       }
     </div>
   } @else {
     <div class="loading-container">
+      <div class="spinner-container">
+        <i class="fas fa-spinner fa-spin"></i>
+      </div>
       <p>Chargement de vos informations...</p>
     </div>
   }
+
+  <div class="dashboard-features">
+    <h2 class="features-title">Pourquoi choisir RhoumaCouvoiturage ?</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-hand-holding-usd"></i>
+        </div>
+        <h3>Économique</h3>
+        <p>Partagez les frais de transport et économisez sur vos déplacements quotidiens.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-leaf"></i>
+        </div>
+        <h3>Écologique</h3>
+        <p>Réduisez votre empreinte carbone en partageant votre trajet avec d'autres voyageurs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <h3>Sécurisé</h3>
+        <p>Profitez d'un système de vérification des profils et d'évaluations entre utilisateurs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <h3>Convivial</h3>
+        <p>Rencontrez de nouvelles personnes et rendez vos trajets plus agréables.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="testimonials-section">
+    <h2 class="testimonials-title">Ce que disent nos utilisateurs</h2>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-content">
+          <i class="fas fa-quote-left"></i>
+          <p>Grâce à RhoumaCouvoiturage, j'économise plus de 200€ par mois pour mes trajets domicile-travail. Service impeccable !</p>
+        </div>
+        <div class="testimonial-author">
+          <div class="author-avatar">
+            <i class="fas fa-user-circle"></i>
+          </div>
+          <div class="author-info">
+            <h4>Jean Dupont</h4>
+            <div class="author-rating">
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-content">
+          <i class="fas fa-quote-left"></i>
+          <p>Interface super intuitive et recherche de trajets ultra rapide. Je recommande vivement cette application !</p>
+        </div>
+        <div class="testimonial-author">
+          <div class="author-avatar">
+            <i class="fas fa-user-circle"></i>
+          </div>
+          <div class="author-info">
+            <h4>Sophie Martin</h4>
+            <div class="author-rating">
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star-half-alt"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-content">
+          <i class="fas fa-quote-left"></i>
+          <p>En tant que conducteur, j'apprécie la simplicité pour proposer mes trajets. La communauté est très sympa !</p>
+        </div>
+        <div class="testimonial-author">
+          <div class="author-avatar">
+            <i class="fas fa-user-circle"></i>
+          </div>
+          <div class="author-info">
+            <h4>Antoine Lefebvre</h4>
+            <div class="author-rating">
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

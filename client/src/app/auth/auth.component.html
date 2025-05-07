@@ -1,48 +1,80 @@
 <div class="auth-container">
   <div class="auth-card">
     <div class="auth-header">
-      <h2>{{ isLoginMode ? 'Connexion' : 'Inscription' }}</h2>
-      <div class="auth-tabs">
-        <button [class.active]="isLoginMode" (click)="isLoginMode = true">Connexion</button>
-        <button [class.active]="!isLoginMode" (click)="isLoginMode = false">Inscription</button>
+      <div class="brand">
+        <i class="fas fa-car-side"></i>
+        <h1>RhoumaCouvoiturage</h1>
       </div>
+      <h2>{{ isLoginMode ? 'Connexion' : 'Créer un compte' }}</h2>
+      <p class="auth-subtitle">{{ isLoginMode ? 'Accédez à votre compte' : 'Rejoignez notre communauté de covoiturage' }}</p>
     </div>
 
     <div *ngIf="errorMessage" class="error-message">
+      <i class="fas fa-exclamation-circle"></i>
       {{ errorMessage }}
     </div>
 
     <div *ngIf="successMessage" class="success-message">
+      <i class="fas fa-check-circle"></i>
       {{ successMessage }}
+    </div>
+
+    <div class="auth-tabs">
+      <button [class.active]="isLoginMode" (click)="isLoginMode = true">Connexion</button>
+      <button [class.active]="!isLoginMode" (click)="isLoginMode = false">Inscription</button>
     </div>
 
     <!-- Login Form -->
     <form *ngIf="isLoginMode" [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth-form">
       <div class="form-group">
-        <label for="login-email">Email</label>
+        <label for="login-email">
+          <i class="fas fa-envelope"></i>
+          Email
+        </label>
         <input
           type="email"
           id="login-email"
           formControlName="email"
-          placeholder="Votre email"
+          placeholder="Votre adresse email"
         >
         <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" class="validation-error">
-          <span *ngIf="loginForm.get('email')?.errors?.['required']">Email est obligatoire</span>
-          <span *ngIf="loginForm.get('email')?.errors?.['email']">Format d'email invalide</span>
+          <span *ngIf="loginForm.get('email')?.errors?.['required']">
+            <i class="fas fa-info-circle"></i> Email est obligatoire
+          </span>
+          <span *ngIf="loginForm.get('email')?.errors?.['email']">
+            <i class="fas fa-info-circle"></i> Format d'email invalide
+          </span>
         </div>
       </div>
 
       <div class="form-group">
-        <label for="login-password">Mot de passe</label>
-        <input
-          type="password"
-          id="login-password"
-          formControlName="password"
-          placeholder="Votre mot de passe"
-        >
-        <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="validation-error">
-          <span *ngIf="loginForm.get('password')?.errors?.['required']">Mot de passe est obligatoire</span>
+        <label for="login-password">
+          <i class="fas fa-lock"></i>
+          Mot de passe
+        </label>
+        <div class="password-input">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="login-password"
+            formControlName="password"
+            placeholder="Votre mot de passe"
+          >
+          <button type="button" class="toggle-password" (click)="togglePasswordVisibility()">
+            <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
         </div>
+        <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="validation-error">
+          <span *ngIf="loginForm.get('password')?.errors?.['required']">
+            <i class="fas fa-info-circle"></i> Mot de passe est obligatoire
+          </span>
+        </div>
+      </div>
+
+      <div class="remember-forgot">
+        <label class="remember-me">
+          <input type="checkbox"> Se souvenir de moi
+        </label>
+        <a href="#" class="forgot-password">Mot de passe oublié?</a>
       </div>
 
       <button
@@ -50,14 +82,22 @@
         [disabled]="loginForm.invalid || isLoading"
         class="auth-button"
       >
-        {{ isLoading ? 'Connexion en cours...' : 'Se connecter' }}
+        <span *ngIf="isLoading">
+          <i class="fas fa-spinner fa-spin"></i> Connexion en cours...
+        </span>
+        <span *ngIf="!isLoading">
+          <i class="fas fa-sign-in-alt"></i> Se connecter
+        </span>
       </button>
     </form>
 
     <!-- Register Form -->
     <form *ngIf="!isLoginMode" [formGroup]="registerForm" (ngSubmit)="onRegister()" class="auth-form">
       <div class="form-group">
-        <label for="register-username">Nom d'utilisateur</label>
+        <label for="register-username">
+          <i class="fas fa-user"></i>
+          Nom d'utilisateur
+        </label>
         <input
           type="text"
           id="register-username"
@@ -65,48 +105,86 @@
           placeholder="Choisir un nom d'utilisateur"
         >
         <div *ngIf="registerForm.get('username')?.invalid && registerForm.get('username')?.touched" class="validation-error">
-          <span *ngIf="registerForm.get('username')?.errors?.['required']">Nom d'utilisateur est obligatoire</span>
-          <span *ngIf="registerForm.get('username')?.errors?.['minlength']">Nom d'utilisateur doit avoir au moins 3 caractères</span>
+          <span *ngIf="registerForm.get('username')?.errors?.['required']">
+            <i class="fas fa-info-circle"></i> Nom d'utilisateur est obligatoire
+          </span>
+          <span *ngIf="registerForm.get('username')?.errors?.['minlength']">
+            <i class="fas fa-info-circle"></i> Nom d'utilisateur doit avoir au moins 3 caractères
+          </span>
         </div>
       </div>
 
       <div class="form-group">
-        <label for="register-email">Email</label>
+        <label for="register-email">
+          <i class="fas fa-envelope"></i>
+          Email
+        </label>
         <input
           type="email"
           id="register-email"
           formControlName="email"
-          placeholder="Votre email"
+          placeholder="Votre adresse email"
         >
         <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" class="validation-error">
-          <span *ngIf="registerForm.get('email')?.errors?.['required']">Email est obligatoire</span>
-          <span *ngIf="registerForm.get('email')?.errors?.['email']">Format d'email invalide</span>
+          <span *ngIf="registerForm.get('email')?.errors?.['required']">
+            <i class="fas fa-info-circle"></i> Email est obligatoire
+          </span>
+          <span *ngIf="registerForm.get('email')?.errors?.['email']">
+            <i class="fas fa-info-circle"></i> Format d'email invalide
+          </span>
         </div>
       </div>
 
       <div class="form-group">
-        <label for="register-password">Mot de passe</label>
-        <input
-          type="password"
-          id="register-password"
-          formControlName="password"
-          placeholder="Choisir un mot de passe"
-        >
+        <label for="register-password">
+          <i class="fas fa-lock"></i>
+          Mot de passe
+        </label>
+        <div class="password-input">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="register-password"
+            formControlName="password"
+            placeholder="Choisir un mot de passe"
+          >
+          <button type="button" class="toggle-password" (click)="togglePasswordVisibility()">
+            <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
         <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" class="validation-error">
-          <span *ngIf="registerForm.get('password')?.errors?.['required']">Mot de passe est obligatoire</span>
-          <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Mot de passe doit avoir au moins 6 caractères</span>
+          <span *ngIf="registerForm.get('password')?.errors?.['required']">
+            <i class="fas fa-info-circle"></i> Mot de passe est obligatoire
+          </span>
+          <span *ngIf="registerForm.get('password')?.errors?.['minlength']">
+            <i class="fas fa-info-circle"></i> Mot de passe doit avoir au moins 6 caractères
+          </span>
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="register-role">Rôle</label>
-        <select
-          id="register-role"
-          formControlName="role"
-        >
-          <option value="passager">Passager</option>
-          <option value="conducteur">Conducteur</option>
-        </select>
+      <div class="form-group role-selection">
+        <label>
+          <i class="fas fa-user-tag"></i>
+          Je m'inscris en tant que
+        </label>
+        <div class="role-options">
+          <label class="role-option" [class.active]="registerForm.get('role')?.value === 'passager'">
+            <input type="radio" formControlName="role" value="passager">
+            <i class="fas fa-user"></i>
+            <span>Passager</span>
+          </label>
+          <label class="role-option" [class.active]="registerForm.get('role')?.value === 'conducteur'">
+            <input type="radio" formControlName="role" value="conducteur">
+            <i class="fas fa-car"></i>
+            <span>Conducteur</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="terms">
+        <label>
+          <input type="checkbox" formControlName="termsAccepted">
+          J'accepte les <a href="#">conditions générales</a> et la <a href="#">politique de confidentialité</a>
+        </label>
       </div>
 
       <button
@@ -114,8 +192,28 @@
         [disabled]="registerForm.invalid || isLoading"
         class="auth-button"
       >
-        {{ isLoading ? 'Inscription en cours...' : "S'inscrire" }}
+        <span *ngIf="isLoading">
+          <i class="fas fa-spinner fa-spin"></i> Inscription en cours...
+        </span>
+        <span *ngIf="!isLoading">
+          <i class="fas fa-user-plus"></i> Créer un compte
+        </span>
       </button>
     </form>
+
+    <div class="auth-divider">
+      <span>ou</span>
+    </div>
+
+    <div class="social-login">
+      <button class="social-btn google">
+        <i class="fab fa-google"></i>
+        Continuer avec Google
+      </button>
+      <button class="social-btn facebook">
+        <i class="fab fa-facebook-f"></i>
+        Continuer avec Facebook
+      </button>
+    </div>
   </div>
 </div>

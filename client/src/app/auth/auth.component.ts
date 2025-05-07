@@ -17,6 +17,7 @@ export class AuthComponent implements OnInit {
   isLoading = false;
   errorMessage: string | null = null;
   successMessage: string | null = null;
+  showPassword = false;
   loginForm!: FormGroup;
   registerForm!: FormGroup;
 
@@ -37,17 +38,44 @@ export class AuthComponent implements OnInit {
       password: ['', [Validators.required]]
     });
 
-    // Initialize register form
+    // Initialize register form with terms accepted
     this.registerForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-      role: ['passager', [Validators.required]]
+      role: ['passager', [Validators.required]],
+      termsAccepted: [false, [Validators.requiredTrue]]
     });
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  onLoginModeChange(isLogin: boolean): void {
+    this.isLoginMode = isLogin;
+    this.errorMessage = null;
+    this.successMessage = null;
+
+    // Reset forms when changing modes
+    if (isLogin) {
+      this.loginForm.reset();
+      this.loginForm.patchValue({ email: '', password: '' });
+    } else {
+      this.registerForm.reset();
+      this.registerForm.patchValue({
+        username: '',
+        email: '',
+        password: '',
+        role: 'passager',
+        termsAccepted: false
+      });
+    }
   }
 
   onLogin(): void {
     if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
       return;
     }
 
@@ -62,7 +90,7 @@ export class AuthComponent implements OnInit {
         if (response.success) {
           this.successMessage = 'Connexion réussie!';
           setTimeout(() => {
-            this.router.navigate(['/']);
+            this.router.navigate(['/dashboard']);
           }, 1000);
         } else {
           this.errorMessage = response.message || 'Échec de connexion. Vérifiez vos informations.';
@@ -78,6 +106,7 @@ export class AuthComponent implements OnInit {
 
   onRegister(): void {
     if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
       return;
     }
 
@@ -92,7 +121,7 @@ export class AuthComponent implements OnInit {
         if (response.success) {
           this.successMessage = 'Inscription réussie! Vous êtes maintenant connecté.';
           setTimeout(() => {
-            this.router.navigate(['/']);
+            this.router.navigate(['/dashboard']);
           }, 1000);
         } else {
           this.errorMessage = response.message || 'Échec d\'inscription.';
