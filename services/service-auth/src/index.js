@@ -4,6 +4,7 @@ const config = require('./config');
 const authRoutes = require('./routes/authRoutes');
 const { initDatabase } = require('./database/sqlite');
 const { connectRedis } = require('./database/redis');
+const { startGrpcServer } = require('./grpc/grpc-server');
 
 // Initialisation de l'application Express
 const app = express();
@@ -28,6 +29,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: 'Erreur interne du serveur' });
 });
 
+// Port gRPC
+const GRPC_PORT = process.env.GRPC_PORT || '50051';
+
 // Démarrage du serveur
 async function startServer() {
   try {
@@ -39,8 +43,12 @@ async function startServer() {
     
     // Démarrer le serveur HTTP
     app.listen(config.port, () => {
-      console.log(`Service d'authentification démarré sur le port ${config.port}`);
+      console.log(`Service d'authentification HTTP démarré sur le port ${config.port}`);
     });
+    
+    // Démarrer le serveur gRPC
+    startGrpcServer(GRPC_PORT);
+    console.log(`Service d'authentification gRPC démarré sur le port ${GRPC_PORT}`);
   } catch (error) {
     console.error('Erreur lors du démarrage du serveur:', error);
     process.exit(1);
