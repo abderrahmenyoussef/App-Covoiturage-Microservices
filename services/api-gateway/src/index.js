@@ -2,6 +2,9 @@ const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const { ApolloServer } = require('apollo-server-express');
+const typeDefs = require('../graphql/schemas/schema');
+const resolvers = require('../graphql/resolvers');
 const authRoutes = require('../routes/auth-routes');
 
 // Chargement des variables d'environnement
@@ -16,12 +19,47 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
-// Routes
+// Configuration Apollo Server (GraphQL)
+async function startApolloServer() {
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    formatError: (err) => {
+      console.error('GraphQL error:', err);
+      return {
+        message: err.message,
+        path: err.path
+      };
+    },
+    context: ({ req }) => {
+      // On peut ajouter des informations contextuelles ici
+      const token = req.headers.authorization || '';
+      return { token };
+    }
+  });
+
+  await server.start();
+  server.applyMiddleware({ app, path: '/graphql' });
+  console.log(`GraphQL endpoint disponible sur /graphql`);
+}
+
+// Démarrage du serveur Apollo
+startApolloServer().catch(error => {
+  console.error('Erreur au démarrage du serveur Apollo:', error);
+});
+
+// Routes REST API
 app.use('/api/auth', authRoutes);
 
 // Route de base
 app.get('/', (req, res) => {
-  res.json({ message: 'API Gateway pour l\'application de covoiturage' });
+  res.json({ 
+    message: 'API Gateway pour l\'application de covoiturage',
+    endpoints: {
+      rest: '/api',
+      graphql: '/graphql'
+    }
+  });
 });
 
 // Middleware de gestion d'erreurs
