@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package ia;
+
+// Service de prédiction de prix
+service PredictionService {
+  // Prédire le prix d'un trajet en fonction du nombre de places disponibles
+  rpc PredictPrice(PricePredictionRequest) returns (PricePredictionResponse) {}
+}
+
+// Requête pour une prédiction de prix
+message PricePredictionRequest {
+  int32 placesDisponibles = 1;
+  string depart = 2;          // Optionnel, informatif seulement
+  string destination = 3;     // Optionnel, informatif seulement
+}
+
+// Réponse contenant la prédiction de prix
+message PricePredictionResponse {
+  bool success = 1;
+  string message = 2;
+  float prixEstime = 3;
+}

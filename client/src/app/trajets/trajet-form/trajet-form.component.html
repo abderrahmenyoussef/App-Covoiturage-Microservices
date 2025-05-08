@@ -17,7 +17,7 @@
         id="depart"
         name="depart"
         [(ngModel)]="trajet.depart"
-        placeholder="Ex: Paris, Gare de Lyon"
+        placeholder="Ex: Tunis, Gare de Tunis"
         required
       >
     </div>
@@ -31,7 +31,7 @@
         id="destination"
         name="destination"
         [(ngModel)]="trajet.destination"
-        placeholder="Ex: Lyon, Place Bellecour"
+        placeholder="Ex: Sousse, Centre-ville"
         required
       >
     </div>
@@ -74,24 +74,37 @@
           id="placesDisponibles"
           name="placesDisponibles"
           [(ngModel)]="trajet.placesDisponibles"
+          (change)="onPlacesChanged()"
           min="1"
+          max="6"
           required
         >
+        <small class="helper-text">Entre 1 et 6 places disponibles</small>
       </div>
 
       <div class="form-group">
         <label for="prix">
           <i class="fas fa-tag"></i> Prix par personne (DT)
         </label>
-        <input
-          type="number"
-          id="prix"
-          name="prix"
-          [(ngModel)]="trajet.prix"
-          min="1"
-          step="0.5"
-          required
-        >
+        <div class="price-input-group">
+          <input
+            type="number"
+            id="prix"
+            name="prix"
+            [(ngModel)]="trajet.prix"
+            min="1"
+            step="0.001"
+            required
+          >
+          <button type="button" class="btn-predict" *ngIf="iaServiceAvailable && !isEditMode"
+            (click)="predictPrice()" [disabled]="isPredictingPrice || !trajet.placesDisponibles">
+            <i class="fas" [ngClass]="isPredictingPrice ? 'fa-spinner fa-spin' : 'fa-magic'"></i>
+            {{ isPredictingPrice ? 'Estimation...' : 'Prédire le prix' }}
+          </button>
+        </div>
+        <small class="helper-text" *ngIf="iaServiceAvailable && !isEditMode">
+          Notre IA peut suggérer un prix basé sur le nombre de places disponibles
+        </small>
       </div>
     </div>
 

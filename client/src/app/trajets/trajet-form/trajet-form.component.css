@@ -147,3 +147,59 @@ input:focus, textarea:focus {
   font-size: 2rem;
   color: #4c84ff;
 }
+
+/* Styles ajoutés pour le groupe d'input de prix avec bouton de prédiction */
+.price-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Style pour le bouton de prédiction */
+.btn-predict {
+  background-color: #6c5ce7;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-predict:hover {
+  background-color: #5649c0;
+}
+
+.btn-predict:disabled {
+  background-color: #a29bde;
+  cursor: not-allowed;
+}
+
+/* Style pour les petits textes d'aide */
+.helper-text {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Modification des styles existants pour accommoder le nouveau layout */
+.form-group input[type="number"] {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Animation pour le spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.fa-spin {
+  animation: spin 1s linear infinite;
+}

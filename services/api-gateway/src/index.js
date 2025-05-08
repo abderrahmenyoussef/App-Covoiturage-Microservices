@@ -7,6 +7,7 @@ const typeDefs = require('../graphql/schemas/schema');
 const resolvers = require('../graphql/resolvers');
 const authRoutes = require('../routes/auth-routes');
 const trajetRoutes = require('../routes/trajet-routes');
+const iaRoutes = require('../routes/ia-routes');
 
 // Chargement des variables d'environnement
 dotenv.config();
@@ -51,7 +52,8 @@ startApolloServer().catch(error => {
 
 // Routes REST API
 app.use('/api/auth', authRoutes);
-app.use('/api', trajetRoutes);  // Nouvelles routes pour les trajets
+app.use('/api', trajetRoutes);  // Routes pour les trajets
+app.use('/api/ia', iaRoutes);    // Nouvelles routes pour l'IA
 
 // Route de base
 app.get('/', (req, res) => {
@@ -62,7 +64,8 @@ app.get('/', (req, res) => {
       graphql: '/graphql',
       documentation: {
         auth: '/api/auth',
-        trajets: '/api/trajets'
+        trajets: '/api/trajets',
+        ia: '/api/ia'
       }
     }
   });

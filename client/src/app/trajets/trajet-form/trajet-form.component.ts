@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TrajetService } from '../../services/trajet.service';
+import { IaService, PricePredictionRequest } from '../../services/ia.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -27,11 +28,14 @@ export class TrajetFormComponent implements OnInit {
   };
 
   isLoading = false;
+  isPredictingPrice = false;
   errors: string[] = [];
   isEditMode = false;
+  iaServiceAvailable = true; // Indicateur de disponibilité du service IA
 
   constructor(
     private trajetService: TrajetService,
+    private iaService: IaService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -40,6 +44,9 @@ export class TrajetFormComponent implements OnInit {
     // Set default date to today
     const today = new Date();
     this.trajet.dateDepart = today.toISOString().split('T')[0];
+
+    // Vérifier l'état du service IA
+    this.checkIaServiceHealth();
 
     // Récupérer l'ID du trajet depuis les paramètres de l'URL si présent
     this.route.paramMap.subscribe(params => {
@@ -58,6 +65,91 @@ export class TrajetFormComponent implements OnInit {
     }
   }
 
+  // Vérifier si le service IA est disponible
+  checkIaServiceHealth(): void {
+    this.iaService.checkServiceHealth().subscribe({
+      next: (response) => {
+        this.iaServiceAvailable = response.status === 'ok';
+        if (!this.iaServiceAvailable) {
+          console.warn('Le service IA n\'est pas disponible. La prédiction automatique de prix est désactivée.');
+        }
+      },
+      error: () => {
+        this.iaServiceAvailable = false;
+        console.warn('Le service IA n\'est pas disponible. La prédiction automatique de prix est désactivée.');
+      }
+    });
+  }
+
+  // Prédire le prix en fonction du nombre de places et des lieux
+  predictPrice(): void {
+    if (!this.iaServiceAvailable || this.trajet.placesDisponibles < 1) {
+      return;
+    }
+
+    this.isPredictingPrice = true;
+
+    const predictionRequest: PricePredictionRequest = {
+      placesDisponibles: this.trajet.placesDisponibles,
+      depart: this.trajet.depart,
+      destination: this.trajet.destination
+    };
+
+    this.iaService.predictPrice(predictionRequest).subscribe({
+      next: (response) => {
+        this.isPredictingPrice = false;
+        if (response.success) {
+          // Format à 3 décimales
+          this.trajet.prix = parseFloat(response.prixEstime.toFixed(3));
+
+          // Afficher une notification de succès
+          Swal.fire({
+            title: 'Prix estimé',
+            text: `Le prix estimé est de ${this.trajet.prix.toFixed(3)} dinars.`,
+            icon: 'info',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000
+          });
+        } else {
+          console.error('Erreur lors de la prédiction du prix:', response.message);
+          Swal.fire({
+            title: 'Erreur',
+            text: 'Impossible de prédire le prix. Veuillez le saisir manuellement.',
+            icon: 'warning',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000
+          });
+        }
+      },
+      error: (error) => {
+        this.isPredictingPrice = false;
+        console.error('Erreur lors de la communication avec le service IA:', error);
+        Swal.fire({
+          title: 'Erreur',
+          text: 'Impossible de prédire le prix. Veuillez le saisir manuellement.',
+          icon: 'warning',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000
+        });
+      }
+    });
+  }
+
+  // Réagir lorsque le nombre de places change
+  onPlacesChanged(): void {
+    if (this.iaServiceAvailable && !this.isEditMode) {
+      if (this.trajet.depart && this.trajet.destination) {
+        this.predictPrice();
+      }
+    }
+  }
+
   loadTrajet(): void {
     if (!this.trajetId) return;
 
@@ -73,7 +165,8 @@ export class TrajetFormComponent implements OnInit {
             dateDepart: dateObj.toISOString().split('T')[0],
             heure: dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
             placesDisponibles: response.trajet.placesDisponibles,
-            prix: response.trajet.prix,
+            // Format à 3 décimales
+            prix: parseFloat(response.trajet.prix.toFixed(3)),
             description: response.trajet.description || ''
           };
         }
@@ -134,12 +227,15 @@ export class TrajetFormComponent implements OnInit {
     // Combine date and time
     const dateTime = new Date(`${this.trajet.dateDepart}T${this.trajet.heure}`);
 
+    // Format à 3 décimales avant d'envoyer
+    const prixArrondi = parseFloat(this.trajet.prix.toFixed(3));
+
     const trajetData = {
       depart: this.trajet.depart,
       destination: this.trajet.destination,
       dateDepart: dateTime.toISOString(),
       placesDisponibles: this.trajet.placesDisponibles,
-      prix: this.trajet.prix,
+      prix: prixArrondi,
       description: this.trajet.description
     };
 

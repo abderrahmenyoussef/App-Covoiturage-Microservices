@@ -1,5 +1,6 @@
 const { Trajet } = require('../database/mongodb');
 const { v4: uuidv4 } = require('uuid');
+const iaClient = require('./iaClient');
 
 /**
  * Service de gestion des trajets
@@ -10,6 +11,32 @@ const trajetService = {
    */
   async createTrajet(trajetData) {
     try {
+      // Si le prix n'est pas fourni, utiliser le service IA pour le prédire
+      let prix = trajetData.prix;
+      if (prix === undefined || prix === null) {
+        try {
+          const prediction = await iaClient.predictPrice(
+            trajetData.placesDisponibles, 
+            trajetData.depart, 
+            trajetData.destination
+          );
+          
+          if (prediction && prediction.success) {
+            prix = prediction.prixEstime;
+            console.log(`Prix prédit par l'IA: ${prix} dinars`);
+          } else {
+            // Prix par défaut si la prédiction échoue
+            prix = 15.00;
+            console.log(`Échec de la prédiction IA, prix par défaut utilisé: ${prix} dinars`);
+          }
+        } catch (predictionError) {
+          // En cas d'erreur avec le service IA, utiliser un prix par défaut
+          prix = 15.00;
+          console.error('Erreur lors de la prédiction du prix:', predictionError);
+          console.log(`Prix par défaut utilisé: ${prix} dinars`);
+        }
+      }
+
       const newTrajet = new Trajet({
         depart: trajetData.depart,
         destination: trajetData.destination,
@@ -17,7 +44,7 @@ const trajetService = {
         conducteurNom: trajetData.conducteurNom || `Conducteur ${trajetData.conducteurId}`,
         dateDepart: new Date(trajetData.dateDepart),
         placesDisponibles: trajetData.placesDisponibles,
-        prix: trajetData.prix,
+        prix: prix,
         description: trajetData.description
       });
 
