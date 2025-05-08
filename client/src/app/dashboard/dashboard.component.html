@@ -10,26 +10,6 @@
         <i class="fas fa-car-side"></i>
       </div>
     </div>
-
-    <div class="search-box">
-      <div class="search-form">
-        <div class="form-group">
-          <label><i class="fas fa-map-marker-alt departure-icon"></i> Départ</label>
-          <input type="text" [(ngModel)]="searchDeparture" placeholder="Ville de départ" class="search-input">
-        </div>
-        <div class="form-group">
-          <label><i class="fas fa-map-marker-alt arrival-icon"></i> Arrivée</label>
-          <input type="text" [(ngModel)]="searchArrival" placeholder="Ville d'arrivée" class="search-input">
-        </div>
-        <div class="form-group">
-          <label><i class="fas fa-calendar-alt"></i> Date</label>
-          <input type="date" [(ngModel)]="searchDate" class="search-input">
-        </div>
-        <button class="search-button" (click)="searchRides()">
-          <i class="fas fa-search"></i> Rechercher
-        </button>
-      </div>
-    </div>
   </div>
 
   <div class="dashboard-stats">
@@ -111,6 +91,26 @@
         </div>
       </div>
 
+      <div class="search-box">
+        <div class="search-form">
+          <div class="form-group">
+            <label><i class="fas fa-map-marker-alt departure-icon"></i> Départ</label>
+            <input type="text" [(ngModel)]="searchDeparture" placeholder="Ville de départ" class="search-input">
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-map-marker-alt arrival-icon"></i> Arrivée</label>
+            <input type="text" [(ngModel)]="searchArrival" placeholder="Ville d'arrivée" class="search-input">
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-calendar-alt"></i> Date</label>
+            <input type="date" [(ngModel)]="searchDate" class="search-input">
+          </div>
+          <button class="search-button" (click)="searchRides()">
+            <i class="fas fa-search"></i> Rechercher
+          </button>
+        </div>
+      </div>
+
       @if (currentUser.role === 'conducteur') {
         <div class="dashboard-section">
           <div class="section-header">
@@ -135,7 +135,7 @@
                       <i class="far fa-clock"></i> Départ à {{ ride.time }}
                     </div>
                     <div class="ride-price">
-                      <i class="fas fa-tag"></i> {{ ride.price }}€ par personne
+                      <i class="fas fa-tag"></i> {{ ride.price }}DT par personne
                     </div>
                     <div class="ride-seats">
                       <i class="fas fa-users"></i> {{ ride.availableSeats }} place{{ ride.availableSeats > 1 ? 's' : '' }} disponible{{ ride.availableSeats > 1 ? 's' : '' }}
@@ -160,16 +160,6 @@
         <div class="dashboard-section">
           <div class="section-header">
             <h2><i class="fas fa-search"></i> Trajets disponibles</h2>
-            <div class="filter-controls">
-              <button class="btn-filter">
-                <i class="fas fa-filter"></i> Filtrer
-              </button>
-              <select class="sort-select">
-                <option value="date">Trier par date</option>
-                <option value="price">Trier par prix</option>
-                <option value="distance">Trier par distance</option>
-              </select>
-            </div>
           </div>
           <div class="section-content">
             <div class="rides-grid">
@@ -195,7 +185,7 @@
                       </div>
                     </div>
                     <div class="ride-price">
-                      <i class="fas fa-tag"></i> {{ ride.price }}€ par personne
+                      <i class="fas fa-tag"></i> {{ ride.price }}DT par personne
                     </div>
                   </div>
                   <div class="ride-actions" (click)="$event.stopPropagation()">
@@ -213,7 +203,6 @@
           </div>
         </div>
 
-        <!-- Section "Mes réservations" pour les passagers -->
         <div class="dashboard-section">
           <div class="section-header">
             <h2><i class="fas fa-ticket-alt"></i> Mes réservations</h2>
@@ -311,7 +300,7 @@
       <div class="testimonial-card">
         <div class="testimonial-content">
           <i class="fas fa-quote-left"></i>
-          <p>Grâce à RhoumaCouvoiturage, j'économise plus de 200€ par mois pour mes trajets domicile-travail. Service impeccable !</p>
+          <p>Grâce à RhoumaCouvoiturage, j'économise plus de 200DT par mois pour mes trajets domicile-travail. Service impeccable !</p>
         </div>
         <div class="testimonial-author">
           <div class="author-avatar">
@@ -374,7 +363,6 @@
     </div>
   </div>
 
-  <!-- Modale de détails d'un trajet -->
   <div class="ride-detail-modal" *ngIf="showRideDetails && selectedRide">
     <div class="modal-overlay" (click)="closeRideDetail()"></div>
     <div class="modal-content">
@@ -456,7 +444,7 @@
             </div>
             <div class="info-text">
               <h4>Prix</h4>
-              <p>{{ selectedRide.price }}€ par personne</p>
+              <p>{{ selectedRide.price }}DT par personne</p>
             </div>
           </div>
         </div>
@@ -468,7 +456,6 @@
     </div>
   </div>
 
-  <!-- Modale de confirmation de réservation -->
   <div class="confirmation-modal" *ngIf="showConfirmation && selectedRide">
     <div class="modal-overlay" (click)="closeConfirmation()"></div>
     <div class="modal-content confirmation-content">
@@ -490,7 +477,7 @@
             <i class="far fa-calendar-alt"></i> {{ selectedRide.date | date:'fullDate':'':'fr' }} à {{ selectedRide.time }}
           </div>
           <div class="confirmation-price">
-            <i class="fas fa-tag"></i> {{ selectedRide.price }}€ par personne
+            <i class="fas fa-tag"></i> {{ selectedRide.price }}DT par personne
           </div>
         </div>
 
@@ -517,7 +504,7 @@
             >+</button>
           </div>
           <p class="places-info">
-            <span *ngIf="placesToReserve > 1">Total : {{ placesToReserve * selectedRide.price }}€</span>
+            <span *ngIf="placesToReserve > 1">Total : {{ placesToReserve * selectedRide.price }}DT</span>
           </p>
           <p class="places-availability">
             {{ selectedRide.availableSeats }} place(s) disponible(s)

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TrajetService } from '../../services/trajet.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-trajet-form',
@@ -118,6 +119,13 @@ export class TrajetFormComponent implements OnInit {
 
   onSubmit(): void {
     if (!this.validateForm()) {
+      // Afficher les erreurs avec SweetAlert2
+      Swal.fire({
+        title: 'Erreur de validation',
+        html: this.errors.map(err => `- ${err}`).join('<br>'),
+        icon: 'error',
+        confirmButtonText: 'Corriger'
+      });
       return;
     }
 
@@ -142,17 +150,33 @@ export class TrajetFormComponent implements OnInit {
           this.isLoading = false;
           if (response.success) {
             this.formSubmitted.emit(true);
-            // Afficher un message de succès
-            alert('Trajet mis à jour avec succès!');
-            // Rediriger vers le tableau de bord
-            this.router.navigate(['/dashboard']);
+            // Afficher un message de succès avec SweetAlert2
+            Swal.fire({
+              title: 'Trajet mis à jour',
+              text: 'Votre trajet a été mis à jour avec succès!',
+              icon: 'success',
+              confirmButtonText: 'Super!'
+            }).then(() => {
+              // Rediriger vers le tableau de bord
+              this.router.navigate(['/dashboard']);
+            });
           } else {
-            this.errors.push(response.message);
+            Swal.fire({
+              title: 'Erreur',
+              text: response.message || 'Une erreur est survenue lors de la mise à jour du trajet',
+              icon: 'error',
+              confirmButtonText: 'OK'
+            });
           }
         },
         error: (error) => {
           console.error('Erreur lors de la mise à jour du trajet', error);
-          this.errors.push('Une erreur est survenue lors de la mise à jour du trajet');
+          Swal.fire({
+            title: 'Erreur',
+            text: 'Une erreur est survenue lors de la mise à jour du trajet',
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
           this.isLoading = false;
         }
       });
@@ -163,17 +187,33 @@ export class TrajetFormComponent implements OnInit {
           this.isLoading = false;
           if (response.success) {
             this.formSubmitted.emit(true);
-            // Afficher un message de succès
-            alert('Trajet créé avec succès!');
-            // Rediriger vers le tableau de bord
-            this.router.navigate(['/dashboard']);
+            // Afficher un message de succès avec SweetAlert2
+            Swal.fire({
+              title: 'Trajet créé',
+              text: 'Votre trajet a été créé avec succès!',
+              icon: 'success',
+              confirmButtonText: 'Super!'
+            }).then(() => {
+              // Rediriger vers le tableau de bord
+              this.router.navigate(['/dashboard']);
+            });
           } else {
-            this.errors.push(response.message);
+            Swal.fire({
+              title: 'Erreur',
+              text: response.message || 'Une erreur est survenue lors de la création du trajet',
+              icon: 'error',
+              confirmButtonText: 'OK'
+            });
           }
         },
         error: (error) => {
           console.error('Erreur lors de la création du trajet', error);
-          this.errors.push('Une erreur est survenue lors de la création du trajet');
+          Swal.fire({
+            title: 'Erreur',
+            text: 'Une erreur est survenue lors de la création du trajet',
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
           this.isLoading = false;
         }
       });
@@ -181,8 +221,22 @@ export class TrajetFormComponent implements OnInit {
   }
 
   cancel(): void {
-    // Rediriger vers le tableau de bord lors de l'annulation
-    this.router.navigate(['/dashboard']);
-    this.formSubmitted.emit(false);
+    // Demander confirmation avant d'annuler
+    Swal.fire({
+      title: 'Êtes-vous sûr?',
+      text: 'Les modifications non enregistrées seront perdues.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, annuler',
+      cancelButtonText: 'Non, continuer la saisie'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Rediriger vers le tableau de bord lors de l'annulation
+        this.router.navigate(['/dashboard']);
+        this.formSubmitted.emit(false);
+      }
+    });
   }
 }

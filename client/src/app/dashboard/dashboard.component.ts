@@ -5,6 +5,7 @@ import { AuthService, User } from '../services/auth.service';
 import { TrajetService } from '../services/trajet.service';
 import { GraphQLModule } from '../graphql.module';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
 
 interface Ride {
   id: string;
@@ -152,30 +153,52 @@ export class DashboardComponent implements OnInit {
         }
       });
     } else {
-      // Charger les trajets disponibles pour les passagers
-      const today = new Date();
-      const filters = {
-        dateDepart: today.toISOString().split('T')[0],
-        placesMinimum: 1
-      };
-
-      this.trajetService.getAllTrajets(filters).subscribe({
+      // Commencer par charger les réservations de l'utilisateur
+      this.trajetService.getMesReservations().subscribe({
         next: (response) => {
           if (response.success && response.trajets) {
-            this.availableRides = this.mapTrajetsToRides(response.trajets);
+            console.log('Réservations chargées:', response.trajets);
+            this.userReservations = this.mapTrajetsToReservations(response.trajets);
+
+            // Une fois les réservations chargées, charger les trajets disponibles
+            this.loadAvailableRides();
+          } else {
+            this.userReservations = [];
+            this.loadAvailableRides();
           }
-          this.isLoading = false;
         },
         error: (error) => {
-          console.error('Erreur lors du chargement des trajets disponibles', error);
-          this.loadSampleData(); // Fallback to sample data
-          this.isLoading = false;
+          console.error('Erreur lors du chargement des réservations', error);
+          this.loadSampleReservations();
+          this.loadAvailableRides();
         }
       });
-
-      // Charger les réservations pour les passagers
-      this.loadUserReservations();
     }
+  }
+
+  // Nouvelle méthode pour charger les trajets disponibles en excluant ceux déjà réservés
+  loadAvailableRides(): void {
+    // Charger tous les trajets disponibles pour les passagers sans filtre
+    this.trajetService.getAllTrajets({}).subscribe({
+      next: (response) => {
+        if (response.success && response.trajets) {
+          const allRides = this.mapTrajetsToRides(response.trajets);
+
+          // Filtrer les trajets déjà réservés par l'utilisateur
+          this.availableRides = allRides.filter(ride =>
+            !this.userReservations.some(reservation => reservation.id === ride.id)
+          );
+        } else {
+          this.availableRides = [];
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des trajets disponibles', error);
+        this.loadSampleData(); // Fallback to sample data
+        this.isLoading = false;
+      }
+    });
   }
 
   loadUserReservations(): void {
@@ -350,7 +373,12 @@ export class DashboardComponent implements OnInit {
     this.trajetService.getAllTrajets(filters).subscribe({
       next: (response) => {
         if (response.success && response.trajets) {
-          this.availableRides = this.mapTrajetsToRides(response.trajets);
+          const allFilteredRides = this.mapTrajetsToRides(response.trajets);
+
+          // Filtrer les trajets déjà réservés par l'utilisateur
+          this.availableRides = allFilteredRides.filter(ride =>
+            !this.userReservations.some(reservation => reservation.id === ride.id)
+          );
         } else {
           this.availableRides = [];
         }
@@ -392,25 +420,45 @@ export class DashboardComponent implements OnInit {
     // S'assurer que placesToReserve est un nombre entier valide
     const places = parseInt(String(this.placesToReserve));
     if (isNaN(places) || places <= 0) {
-      alert('Veuillez entrer un nombre de places valide (minimum 1).');
+      Swal.fire({
+        title: 'Erreur',
+        text: 'Veuillez entrer un nombre de places valide (minimum 1).',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
       return;
     }
 
     // Vérifier si le nombre de places demandé est disponible
     if (places > this.selectedRide.availableSeats) {
-      alert(`Il n'y a que ${this.selectedRide.availableSeats} places disponibles pour ce trajet.`);
+      Swal.fire({
+        title: 'Places insuffisantes',
+        text: `Il n'y a que ${this.selectedRide.availableSeats} places disponibles pour ce trajet.`,
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
       return;
     }
 
     this.trajetService.bookTrajet(this.selectedRide.id, places).subscribe({
       next: (response) => {
         if (response.success) {
-          alert('Réservation effectuée avec succès !');
+          Swal.fire({
+            title: 'Réservation confirmée!',
+            text: 'Votre réservation a été effectuée avec succès!',
+            icon: 'success',
+            confirmButtonText: 'Super!'
+          });
           this.showConfirmation = false;
           this.showRideDetails = false;
           this.loadRealData(); // Recharger les données
         } else {
-          alert(`Erreur: ${response.message || 'Une erreur est survenue lors de la réservation'}`);
+          Swal.fire({
+            title: 'Erreur',
+            text: response.message || 'Une erreur est survenue lors de la réservation',
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
         }
       },
       error: (error) => {
@@ -426,7 +474,12 @@ export class DashboardComponent implements OnInit {
           errorMessage += ' Vous n\'avez pas les autorisations nécessaires.';
         }
 
-        alert(errorMessage + ' Veuillez réessayer.');
+        Swal.fire({
+          title: 'Erreur',
+          text: errorMessage,
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
       }
     });
   }
@@ -441,22 +494,45 @@ export class DashboardComponent implements OnInit {
   }
 
   deleteRide(ride: Ride): void {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer ce trajet de ${ride.departure} à ${ride.arrival} ?`)) {
-      this.trajetService.deleteTrajet(ride.id).subscribe({
-        next: (response) => {
-          if (response.success) {
-            alert('Trajet supprimé avec succès !');
-            this.driverRides = this.driverRides.filter(r => r.id !== ride.id);
-          } else {
-            alert(`Erreur: ${response.message}`);
+    Swal.fire({
+      title: 'Êtes-vous sûr?',
+      text: `Voulez-vous vraiment supprimer ce trajet de ${ride.departure} à ${ride.arrival} ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.trajetService.deleteTrajet(ride.id).subscribe({
+          next: (response) => {
+            if (response.success) {
+              Swal.fire(
+                'Supprimé!',
+                'Votre trajet a été supprimé avec succès.',
+                'success'
+              );
+              this.driverRides = this.driverRides.filter(r => r.id !== ride.id);
+            } else {
+              Swal.fire(
+                'Erreur',
+                response.message || 'Une erreur est survenue lors de la suppression',
+                'error'
+              );
+            }
+          },
+          error: (error) => {
+            console.error('Erreur lors de la suppression du trajet', error);
+            Swal.fire(
+              'Erreur',
+              'Une erreur est survenue lors de la suppression du trajet',
+              'error'
+            );
           }
-        },
-        error: (error) => {
-          console.error('Erreur lors de la suppression du trajet', error);
-          alert('Une erreur est survenue lors de la suppression du trajet');
-        }
-      });
-    }
+        });
+      }
+    });
   }
 
   formatReservationDate(date: Date): string {
@@ -468,25 +544,49 @@ export class DashboardComponent implements OnInit {
   }
 
   cancelReservation(reservation: Reservation): void {
-    if (confirm(`Voulez-vous vraiment annuler votre réservation pour le trajet de ${reservation.departure} à ${reservation.arrival} ?`)) {
-      this.trajetService.cancelBooking(reservation.id, reservation.reservationId).subscribe({
-        next: (response) => {
-          if (response.success) {
-            alert('Réservation annulée avec succès !');
-            // Supprimer la réservation de la liste
-            this.userReservations = this.userReservations.filter(r => r.reservationId !== reservation.reservationId);
-            // Recharger les trajets disponibles
-            this.loadRealData();
-          } else {
-            alert(`Erreur: ${response.message}`);
+    Swal.fire({
+      title: 'Êtes-vous sûr?',
+      text: `Voulez-vous vraiment annuler votre réservation pour le trajet de ${reservation.departure} à ${reservation.arrival} ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, annuler',
+      cancelButtonText: 'Non, garder ma réservation'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.trajetService.cancelBooking(reservation.id, reservation.reservationId).subscribe({
+          next: (response) => {
+            if (response.success) {
+              Swal.fire(
+                'Annulée!',
+                'Votre réservation a été annulée avec succès.',
+                'success'
+              );
+              // Supprimer la réservation de la liste des réservations
+              this.userReservations = this.userReservations.filter(r => r.reservationId !== reservation.reservationId);
+
+              // Recharger les trajets disponibles pour que le trajet annulé réapparaisse dans la liste
+              this.loadAvailableRides();
+            } else {
+              Swal.fire(
+                'Erreur',
+                response.message || 'Une erreur est survenue lors de l\'annulation',
+                'error'
+              );
+            }
+          },
+          error: (error) => {
+            console.error('Erreur lors de l\'annulation de la réservation', error);
+            Swal.fire(
+              'Erreur',
+              'Une erreur est survenue lors de l\'annulation de la réservation',
+              'error'
+            );
           }
-        },
-        error: (error) => {
-          console.error('Erreur lors de l\'annulation de la réservation', error);
-          alert('Une erreur est survenue lors de l\'annulation de la réservation');
-        }
-      });
-    }
+        });
+      }
+    });
   }
 
   getMonthName(date: Date): string {
