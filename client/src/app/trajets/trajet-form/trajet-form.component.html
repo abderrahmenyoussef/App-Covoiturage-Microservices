@@ -1,0 +1,126 @@
+<div class="trajet-form-container">
+  <h2>{{ trajetId ? 'Modifier un trajet' : 'Proposer un nouveau trajet' }}</h2>
+
+  <div class="errors-container" *ngIf="errors.length > 0">
+    <div class="error-message" *ngFor="let error of errors">
+      <i class="fas fa-exclamation-circle"></i> {{ error }}
+    </div>
+  </div>
+
+  <form (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="depart">
+        <i class="fas fa-map-marker-alt departure-icon"></i> Lieu de départ
+      </label>
+      <input
+        type="text"
+        id="depart"
+        name="depart"
+        [(ngModel)]="trajet.depart"
+        placeholder="Ex: Paris, Gare de Lyon"
+        required
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="destination">
+        <i class="fas fa-map-marker-alt arrival-icon"></i> Destination
+      </label>
+      <input
+        type="text"
+        id="destination"
+        name="destination"
+        [(ngModel)]="trajet.destination"
+        placeholder="Ex: Lyon, Place Bellecour"
+        required
+      >
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="dateDepart">
+          <i class="fas fa-calendar-alt"></i> Date de départ
+        </label>
+        <input
+          type="date"
+          id="dateDepart"
+          name="dateDepart"
+          [(ngModel)]="trajet.dateDepart"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="heure">
+          <i class="fas fa-clock"></i> Heure
+        </label>
+        <input
+          type="time"
+          id="heure"
+          name="heure"
+          [(ngModel)]="trajet.heure"
+          required
+        >
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="placesDisponibles">
+          <i class="fas fa-users"></i> Nombre de places
+        </label>
+        <input
+          type="number"
+          id="placesDisponibles"
+          name="placesDisponibles"
+          [(ngModel)]="trajet.placesDisponibles"
+          min="1"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="prix">
+          <i class="fas fa-tag"></i> Prix par personne (€)
+        </label>
+        <input
+          type="number"
+          id="prix"
+          name="prix"
+          [(ngModel)]="trajet.prix"
+          min="1"
+          step="0.5"
+          required
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">
+        <i class="fas fa-info-circle"></i> Description (optionnelle)
+      </label>
+      <textarea
+        id="description"
+        name="description"
+        [(ngModel)]="trajet.description"
+        placeholder="Informations supplémentaires, conditions particulières..."
+        rows="3"
+      ></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-cancel" (click)="cancel()">
+        <i class="fas fa-times"></i> Annuler
+      </button>
+      <button type="submit" class="btn-submit" [disabled]="isLoading">
+        <i class="fas fa-save"></i> {{ trajetId ? 'Mettre à jour' : 'Créer le trajet' }}
+      </button>
+    </div>
+  </form>
+
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="spinner">
+      <i class="fas fa-spinner fa-spin"></i>
+    </div>
+  </div>
+</div>

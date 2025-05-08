@@ -6,6 +6,7 @@ const { ApolloServer } = require('apollo-server-express');
 const typeDefs = require('../graphql/schemas/schema');
 const resolvers = require('../graphql/resolvers');
 const authRoutes = require('../routes/auth-routes');
+const trajetRoutes = require('../routes/trajet-routes');
 
 // Chargement des variables d'environnement
 dotenv.config();
@@ -33,7 +34,7 @@ async function startApolloServer() {
     },
     context: ({ req }) => {
       // On peut ajouter des informations contextuelles ici
-      const token = req.headers.authorization || '';
+      const token = req.headers.authorization?.split(' ')[1] || '';
       return { token };
     }
   });
@@ -50,6 +51,7 @@ startApolloServer().catch(error => {
 
 // Routes REST API
 app.use('/api/auth', authRoutes);
+app.use('/api', trajetRoutes);  // Nouvelles routes pour les trajets
 
 // Route de base
 app.get('/', (req, res) => {
@@ -57,7 +59,11 @@ app.get('/', (req, res) => {
     message: 'API Gateway pour l\'application de covoiturage',
     endpoints: {
       rest: '/api',
-      graphql: '/graphql'
+      graphql: '/graphql',
+      documentation: {
+        auth: '/api/auth',
+        trajets: '/api/trajets'
+      }
     }
   });
 });

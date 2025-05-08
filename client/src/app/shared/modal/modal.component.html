@@ -1,0 +1,8 @@
+<div class="modal-overlay" [class.active]="isOpen" (click)="close()" *ngIf="isOpen">
+  <div class="modal-content" (click)="stopPropagation($event)">
+    <button class="modal-close" (click)="close()">
+      <i class="fas fa-times"></i>
+    </button>
+    <ng-content></ng-content>
+  </div>
+</div>

@@ -1,0 +1,149 @@
+.trajet-form-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.trajet-form-container h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+label i {
+  margin-right: 0.5rem;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+input:focus, textarea:focus {
+  border-color: #4c84ff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 132, 255, 0.1);
+}
+
+.departure-icon {
+  color: #4c84ff;
+}
+
+.arrival-icon {
+  color: #f86b6b;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn-cancel, .btn-submit {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-cancel {
+  background-color: #f5f5f5;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.btn-cancel:hover {
+  background-color: #eee;
+}
+
+.btn-submit {
+  background-color: #4c84ff;
+  color: white;
+  border: none;
+}
+
+.btn-submit:hover {
+  background-color: #3a6cd1;
+}
+
+.btn-submit:disabled {
+  background-color: #b0c4ff;
+  cursor: not-allowed;
+}
+
+.errors-container {
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background-color: #fff3f3;
+  border-left: 4px solid #f86b6b;
+  border-radius: 4px;
+}
+
+.error-message {
+  color: #d63031;
+  margin-bottom: 0.5rem;
+}
+
+.error-message:last-child {
+  margin-bottom: 0;
+}
+
+.error-message i {
+  margin-right: 0.5rem;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px;
+}
+
+.spinner {
+  font-size: 2rem;
+  color: #4c84ff;
+}

@@ -1,0 +1,139 @@
+syntax = "proto3";
+
+package trajet;
+
+service TrajetService {
+  // Créer un nouveau trajet
+  rpc CreateTrajet(TrajetRequest) returns (TrajetResponse) {}
+  
+  // Récupérer tous les trajets disponibles
+  rpc GetAllTrajets(GetTrajetsRequest) returns (GetTrajetsResponse) {}
+  
+  // Récupérer un trajet par son ID
+  rpc GetTrajetById(TrajetByIdRequest) returns (TrajetResponse) {}
+  
+  // Récupérer les trajets d'un utilisateur
+  rpc GetTrajetsByUser(TrajetsByUserRequest) returns (GetTrajetsResponse) {}
+  
+  // Mettre à jour un trajet
+  rpc UpdateTrajet(UpdateTrajetRequest) returns (TrajetResponse) {}
+  
+  // Supprimer un trajet
+  rpc DeleteTrajet(TrajetByIdRequest) returns (DeleteResponse) {}
+  
+  // Réserver une place dans un trajet
+  rpc BookTrajet(BookingRequest) returns (BookingResponse) {}
+  
+  // Annuler une réservation
+  rpc CancelBooking(BookingCancelRequest) returns (DeleteResponse) {}
+}
+
+// Message pour la création d'un trajet
+message TrajetRequest {
+  string depart = 1;
+  string destination = 2;
+  int64 conducteurId = 3;
+  string dateDepart = 4;
+  int32 placesDisponibles = 5;
+  float prix = 6;
+  string description = 7;
+}
+
+// Message pour la réponse contenant un trajet
+message TrajetResponse {
+  bool success = 1;
+  string message = 2;
+  Trajet trajet = 3;
+}
+
+// Structure d'un trajet
+message Trajet {
+  string id = 1;
+  string depart = 2;
+  string destination = 3;
+  int64 conducteurId = 4;
+  string conducteurNom = 5;
+  string dateDepart = 6;
+  int32 placesDisponibles = 7;
+  int32 placesReservees = 8;
+  float prix = 9;
+  string description = 10;
+  string dateCreation = 11;
+  repeated Reservation reservations = 12;
+}
+
+// Message pour récupérer tous les trajets avec filtres optionnels
+message GetTrajetsRequest {
+  string depart = 1;
+  string destination = 2;
+  string dateDepart = 3;
+  int32 placesMinimum = 4;
+  float prixMax = 5;
+}
+
+// Message pour la réponse contenant plusieurs trajets
+message GetTrajetsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated Trajet trajets = 3;
+}
+
+// Message pour demander un trajet par ID
+message TrajetByIdRequest {
+  string id = 1;
+}
+
+// Message pour demander les trajets d'un utilisateur
+message TrajetsByUserRequest {
+  int64 userId = 1;
+  bool asPassenger = 2; // true pour les trajets réservés, false pour les trajets créés
+}
+
+// Message pour mettre à jour un trajet
+message UpdateTrajetRequest {
+  string id = 1;
+  string depart = 2;
+  string destination = 3;
+  string dateDepart = 4;
+  int32 placesDisponibles = 5;
+  float prix = 6;
+  string description = 7;
+}
+
+// Message pour réserver une place dans un trajet
+message BookingRequest {
+  string trajetId = 1;
+  int64 passagerId = 2;
+  string passagerNom = 3;
+  int32 places = 4;
+}
+
+// Structure d'une réservation
+message Reservation {
+  string id = 1;
+  int64 passagerId = 2;
+  string passagerNom = 3;
+  int32 places = 4;
+  string dateReservation = 5;
+}
+
+// Réponse pour une réservation
+message BookingResponse {
+  bool success = 1;
+  string message = 2;
+  Reservation reservation = 3;
+  Trajet trajet = 4;
+}
+
+// Message pour annuler une réservation
+message BookingCancelRequest {
+  string trajetId = 1;
+  string reservationId = 2;
+  int64 passagerId = 3;
+}
+
+// Réponse pour une suppression
+message DeleteResponse {
+  bool success = 1;
+  string message = 2;
+}

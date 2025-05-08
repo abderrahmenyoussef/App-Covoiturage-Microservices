@@ -174,7 +174,7 @@
           <div class="section-content">
             <div class="rides-grid">
               @for (ride of availableRides; track ride.id) {
-                <div class="ride-card clickable">
+                <div class="ride-card clickable" (click)="showRideDetail(ride)">
                   <div class="ride-date">
                     <span class="day">{{ getDay(ride.date) }}</span>
                     <span class="month">{{ getMonthName(ride.date) }}</span>
@@ -198,10 +198,64 @@
                       <i class="fas fa-tag"></i> {{ ride.price }}€ par personne
                     </div>
                   </div>
-                  <div class="ride-actions">
+                  <div class="ride-actions" (click)="$event.stopPropagation()">
                     <button class="btn-reserve" (click)="reserveRide(ride)">Réserver</button>
                   </div>
                 </div>
+              }
+              @if (availableRides.length === 0) {
+                <div class="no-rides-message">
+                  <i class="fas fa-info-circle"></i>
+                  <p>Aucun trajet disponible pour vos critères de recherche.</p>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Section "Mes réservations" pour les passagers -->
+        <div class="dashboard-section">
+          <div class="section-header">
+            <h2><i class="fas fa-ticket-alt"></i> Mes réservations</h2>
+          </div>
+          <div class="section-content">
+            <div class="rides-grid">
+              @if (userReservations.length === 0) {
+                <div class="no-reservations-message">
+                  <i class="fas fa-info-circle"></i>
+                  <p>Vous n'avez pas encore de réservations. Recherchez un trajet et réservez votre place !</p>
+                </div>
+              } @else {
+                @for (reservation of userReservations; track reservation.id) {
+                  <div class="ride-card">
+                    <div class="ride-date">
+                      <span class="day">{{ getDay(reservation.date) }}</span>
+                      <span class="month">{{ getMonthName(reservation.date) }}</span>
+                    </div>
+                    <div class="ride-details">
+                      <div class="ride-route">
+                        <span class="departure">{{ reservation.departure }}</span>
+                        <i class="fas fa-long-arrow-alt-right"></i>
+                        <span class="arrival">{{ reservation.arrival }}</span>
+                      </div>
+                      <div class="ride-time">
+                        <i class="far fa-clock"></i> Départ à {{ reservation.time }}
+                      </div>
+                      <div class="driver-info">
+                        <i class="fas fa-user-circle"></i> {{ reservation.driverName }}
+                      </div>
+                      <div class="reservation-info">
+                        <i class="fas fa-users"></i> {{ reservation.places }} place(s) réservée(s)
+                        <span class="reservation-date">le {{ formatReservationDate(reservation.reservationDate) }}</span>
+                      </div>
+                    </div>
+                    <div class="ride-actions">
+                      <button class="btn-cancel-reservation" (click)="cancelReservation(reservation)">
+                        <i class="fas fa-times"></i> Annuler
+                      </button>
+                    </div>
+                  </div>
+                }
               }
             </div>
           </div>
@@ -316,6 +370,169 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale de détails d'un trajet -->
+  <div class="ride-detail-modal" *ngIf="showRideDetails && selectedRide">
+    <div class="modal-overlay" (click)="closeRideDetail()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Détails du trajet</h2>
+        <button class="modal-close-btn" (click)="closeRideDetail()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="ride-detail-route">
+          <div class="route-point departure">
+            <div class="point-icon">
+              <i class="fas fa-map-marker-alt departure-icon"></i>
+            </div>
+            <div class="point-info">
+              <h3>Départ</h3>
+              <p>{{ selectedRide.departure }}</p>
+            </div>
+          </div>
+          <div class="route-line">
+            <i class="fas fa-long-arrow-alt-down"></i>
+          </div>
+          <div class="route-point arrival">
+            <div class="point-icon">
+              <i class="fas fa-map-marker-alt arrival-icon"></i>
+            </div>
+            <div class="point-info">
+              <h3>Arrivée</h3>
+              <p>{{ selectedRide.arrival }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ride-detail-info">
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="far fa-calendar-alt"></i>
+            </div>
+            <div class="info-text">
+              <h4>Date</h4>
+              <p>{{ selectedRide.date | date:'EEEE d MMMM yyyy':'':'fr' }}</p>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="far fa-clock"></i>
+            </div>
+            <div class="info-text">
+              <h4>Heure</h4>
+              <p>{{ selectedRide.time }}</p>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="info-text">
+              <h4>Conducteur</h4>
+              <p>{{ selectedRide.driverName }}
+                <span class="driver-rating">
+                  <i class="fas fa-star"></i> {{ selectedRide.driverRating }}
+                </span>
+              </p>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="info-text">
+              <h4>Places disponibles</h4>
+              <p>{{ selectedRide.availableSeats }} place(s)</p>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">
+              <i class="fas fa-tag"></i>
+            </div>
+            <div class="info-text">
+              <h4>Prix</h4>
+              <p>{{ selectedRide.price }}€ par personne</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeRideDetail()">Annuler</button>
+        <button class="btn-reserve-large" (click)="reserveRide(selectedRide)">Réserver ce trajet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale de confirmation de réservation -->
+  <div class="confirmation-modal" *ngIf="showConfirmation && selectedRide">
+    <div class="modal-overlay" (click)="closeConfirmation()"></div>
+    <div class="modal-content confirmation-content">
+      <div class="modal-header">
+        <h2>Confirmer votre réservation</h2>
+        <button class="modal-close-btn" (click)="closeConfirmation()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="confirmation-info">
+          <p>Vous êtes sur le point de réserver un trajet :</p>
+          <div class="confirmation-route">
+            <i class="fas fa-map-marker-alt departure-icon"></i> {{ selectedRide.departure }}
+            <i class="fas fa-long-arrow-alt-right"></i>
+            <i class="fas fa-map-marker-alt arrival-icon"></i> {{ selectedRide.arrival }}
+          </div>
+          <div class="confirmation-date">
+            <i class="far fa-calendar-alt"></i> {{ selectedRide.date | date:'fullDate':'':'fr' }} à {{ selectedRide.time }}
+          </div>
+          <div class="confirmation-price">
+            <i class="fas fa-tag"></i> {{ selectedRide.price }}€ par personne
+          </div>
+        </div>
+
+        <div class="places-selection">
+          <label for="places-input">Nombre de places à réserver :</label>
+          <div class="places-control">
+            <button
+              [disabled]="placesToReserve <= 1"
+              (click)="placesToReserve = placesToReserve - 1"
+              class="btn-places"
+            >-</button>
+            <input
+              type="number"
+              [(ngModel)]="placesToReserve"
+              id="places-input"
+              [max]="selectedRide.availableSeats"
+              min="1"
+              class="places-input"
+            >
+            <button
+              [disabled]="placesToReserve >= selectedRide.availableSeats"
+              (click)="placesToReserve = placesToReserve + 1"
+              class="btn-places"
+            >+</button>
+          </div>
+          <p class="places-info">
+            <span *ngIf="placesToReserve > 1">Total : {{ placesToReserve * selectedRide.price }}€</span>
+          </p>
+          <p class="places-availability">
+            {{ selectedRide.availableSeats }} place(s) disponible(s)
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeConfirmation()">Annuler</button>
+        <button
+          class="btn-confirm"
+          (click)="confirmReservation()"
+          [disabled]="placesToReserve < 1 || placesToReserve > selectedRide.availableSeats"
+        >
+          Confirmer la réservation
+        </button>
       </div>
     </div>
   </div>
