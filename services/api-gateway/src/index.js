@@ -8,6 +8,8 @@ const resolvers = require('../graphql/resolvers');
 const authRoutes = require('../routes/auth-routes');
 const trajetRoutes = require('../routes/trajet-routes');
 const iaRoutes = require('../routes/ia-routes');
+// Import Kafka producer
+const kafkaProducer = require('./utils/kafkaProducer');
 
 // Chargement des variables d'environnement
 dotenv.config();
@@ -20,6 +22,10 @@ const app = express();
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
+
+// Initialize Kafka producer
+kafkaProducer.connectProducer()
+  .catch(error => console.error('Error connecting to Kafka:', error));
 
 // Configuration Apollo Server (GraphQL)
 async function startApolloServer() {

@@ -1,6 +1,7 @@
 const express = require('express');
 const trajetClient = require('../src/clients/trajet-client');
 const { verifyToken } = require('../src/clients/auth-client');
+const kafkaProducer = require('../src/utils/kafkaProducer');
 const router = express.Router();
 
 // Middleware d'authentification
@@ -128,6 +129,13 @@ router.post('/trajets', authenticate, async (req, res) => {
     };
     
     const result = await trajetClient.createTrajet(trajetData);
+    
+    // Send Kafka message for trip creation
+    if (result.success) {
+      await kafkaProducer.logTripCreation(result.trajet, req.user.id);
+      console.log('Message Kafka envoyé: création de trajet', result.trajet.id);
+    }
+    
     return res.status(result.success ? 201 : 400).json(result);
   } catch (error) {
     console.error('Erreur lors de la création du trajet:', error);
@@ -158,6 +166,13 @@ router.put('/trajets/:id', authenticate, async (req, res) => {
     }
     
     const result = await trajetClient.updateTrajet(req.params.id, req.body);
+    
+    // Send Kafka message for trip update
+    if (result.success) {
+      await kafkaProducer.logTripUpdate(req.params.id, req.body, req.user.id);
+      console.log('Message Kafka envoyé: mise à jour de trajet', req.params.id);
+    }
+    
     return res.status(result.success ? 200 : 400).json(result);
   } catch (error) {
     console.error(`Erreur lors de la mise à jour du trajet ${req.params.id}:`, error);
@@ -190,6 +205,13 @@ router.delete('/trajets/:id', authenticate, async (req, res) => {
     }
     
     const result = await trajetClient.deleteTrajet(req.params.id);
+    
+    // Send Kafka message for trip deletion
+    if (result.success) {
+      await kafkaProducer.logTripDeletion(req.params.id, req.user.id);
+      console.log('Message Kafka envoyé: suppression de trajet', req.params.id);
+    }
+    
     return res.status(result.success ? 200 : 400).json(result);
   } catch (error) {
     console.error(`Erreur lors de la suppression du trajet ${req.params.id}:`, error);
@@ -233,6 +255,17 @@ router.post('/trajets/:id/reservations', authenticate, async (req, res) => {
     console.log('Données de réservation formatées:', bookingData);
     
     const result = await trajetClient.bookTrajet(bookingData);
+    
+    // Send Kafka message for reservation creation
+    if (result.success) {
+      await kafkaProducer.logReservation(
+        result.reservation,
+        req.params.id,
+        req.user.id
+      );
+      console.log('Message Kafka envoyé: nouvelle réservation', result.reservation.id);
+    }
+    
     return res.status(result.success ? 201 : 400).json(result);
   } catch (error) {
     console.error(`Erreur lors de la réservation du trajet ${req.params.id}:`, error);
@@ -255,6 +288,17 @@ router.delete('/trajets/:trajetId/reservations/:reservationId', authenticate, as
     };
     
     const result = await trajetClient.cancelBooking(cancelData);
+    
+    // Send Kafka message for reservation cancellation
+    if (result.success) {
+      await kafkaProducer.logReservationCancellation(
+        req.params.reservationId,
+        req.params.trajetId,
+        req.user.id
+      );
+      console.log('Message Kafka envoyé: annulation de réservation', req.params.reservationId);
+    }
+    
     return res.status(result.success ? 200 : 400).json(result);
   } catch (error) {
     console.error(`Erreur lors de l'annulation de la réservation:`, error);

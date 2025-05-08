@@ -17,6 +17,7 @@
     "express-graphql": "^0.12.0",
     "graphql": "^16.11.0",
     "grpc": "^1.24.11",
+    "kafkajs": "^2.2.4",
     "morgan": "^1.10.0"
   },
   "devDependencies": {

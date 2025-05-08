@@ -1,5 +1,6 @@
 const trajetClient = require('../../src/clients/trajet-client');
 const { verifyToken } = require('../../src/clients/auth-client');
+const kafkaProducer = require('../../src/utils/kafkaProducer');
 
 // Vérifier si l'utilisateur est authentifié
 const checkAuth = async (context) => {
@@ -107,6 +108,12 @@ const trajetResolvers = {
         };
         
         const result = await trajetClient.createTrajet(trajetData);
+        
+        // Send Kafka message for trip creation
+        if (result.success) {
+          await kafkaProducer.logTripCreation(result.trajet, user.id);
+        }
+        
         return result;
       } catch (error) {
         console.error('Erreur lors de la création du trajet:', error);
@@ -139,6 +146,12 @@ const trajetResolvers = {
         }
         
         const result = await trajetClient.updateTrajet(id, input);
+        
+        // Send Kafka message for trip update
+        if (result.success) {
+          await kafkaProducer.logTripUpdate(id, input, user.id);
+        }
+        
         return result;
       } catch (error) {
         console.error(`Erreur lors de la mise à jour du trajet ${id}:`, error);
@@ -173,6 +186,12 @@ const trajetResolvers = {
         }
         
         const result = await trajetClient.deleteTrajet(id);
+        
+        // Send Kafka message for trip deletion
+        if (result.success) {
+          await kafkaProducer.logTripDeletion(id, user.id);
+        }
+        
         return result;
       } catch (error) {
         console.error(`Erreur lors de la suppression du trajet ${id}:`, error);
@@ -196,6 +215,16 @@ const trajetResolvers = {
         };
         
         const result = await trajetClient.bookTrajet(bookingData);
+        
+        // Send Kafka message for reservation creation
+        if (result.success) {
+          await kafkaProducer.logReservation(
+            result.reservation, 
+            input.trajetId, 
+            user.id
+          );
+        }
+        
         return result;
       } catch (error) {
         console.error(`Erreur lors de la réservation du trajet:`, error);
@@ -220,6 +249,16 @@ const trajetResolvers = {
         };
         
         const result = await trajetClient.cancelBooking(cancelData);
+        
+        // Send Kafka message for reservation cancellation
+        if (result.success) {
+          await kafkaProducer.logReservationCancellation(
+            input.reservationId,
+            input.trajetId,
+            user.id
+          );
+        }
+        
         return result;
       } catch (error) {
         console.error(`Erreur lors de l'annulation de la réservation:`, error);
