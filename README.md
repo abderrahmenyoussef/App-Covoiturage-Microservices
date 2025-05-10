@@ -107,12 +107,11 @@ The client application communicates with the API Gateway using both REST and Gra
 
 ### Kafka Event Flow
 
-The application uses Kafka for event-driven communication between services, primarily for logging and monitoring:
+The application uses Kafka for event-driven communication, primarily for logging and monitoring. Unlike a typical distributed event system, in this architecture only the API Gateway produces events to Kafka:
 
 #### Event Production
-- **Services → Kafka**: Each service (Auth, Trip, AI) produces events to Kafka topics when significant actions occur
+- **API Gateway → Kafka**: The API Gateway produces events to Kafka topics when significant actions occur in any service
 - **Event Types**:
-  - Authentication events (login, logout, registration)
   - Trip events (creation, update, deletion, booking)
   - System events (errors, warnings, service status)
 
@@ -124,13 +123,13 @@ The application uses Kafka for event-driven communication between services, prim
   - Important events trigger alerts or notifications
 
 #### Implementation Details
-- **Producer Configuration**: Services use Kafka producers with specified retry and batch settings
+- **Producer Configuration**: API Gateway uses Kafka producers with specified retry and batch settings
 - **Consumer Groups**: Log Service uses consumer groups to ensure each message is processed once
 - **Topic Organization**: Different topics for different event categories with appropriate partitioning
 - **Message Format**: JSON structure with metadata, timestamp, service ID, and payload
 
 #### Benefits
-- **Loose Coupling**: Services don't need direct knowledge of logging infrastructure
+- **Centralized Logging**: All events flow through the API Gateway, providing a single point of logging
 - **Scalability**: Kafka's distributed nature allows scaling of both producers and consumers
 - **Reliability**: Message persistence ensures no events are lost even if Log Service is temporarily down
 - **Real-time Analysis**: Enables real-time monitoring and alerting based on event streams
@@ -564,6 +563,14 @@ The Trip Service manages the core functionality of creating, updating, searching
    - Trip Service validates cancellation eligibility
    - Removes reservation and restores available seats
    - Cancellation event sent to Kafka for logging
+
+5. **Trip Removal Process**:
+   - Driver requests to delete their trip
+   - Trip Service verifies the driver is the trip owner
+   - Checks if trip has any active reservations
+   - If reservations exist, notifies affected passengers about cancellation
+   - Deletes the trip from the database
+   - Trip deletion event sent to Kafka for logging and auditing
 
 Example of trip booking implementation:
 
