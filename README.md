@@ -22,6 +22,7 @@ A modern carpooling platform built using microservices architecture, enabling us
 - [Trip Service Flow](#trip-service-flow)
 - [AI Service Flow](#ai-service-flow)
 - [Log Service Flow](#log-service-flow)
+- [API Gateway Flow](#api-gateway-flow)
 - [User Journey](#user-journey)
 - [Installation & Setup](#installation--setup)
 
@@ -765,6 +766,157 @@ const setupKafkaConsumer = async () => {
   } catch (error) {
     console.error('Failed to start Kafka consumer:', error);
     process.exit(1);
+  }
+};
+```
+
+## API Gateway Flow
+
+The API Gateway serves as the central entry point for all client requests, coordinating communication between the client and various microservices:
+
+1. **Request Routing**:
+   - Client sends HTTP request (REST or GraphQL) to the API Gateway
+   - Gateway identifies the target service based on URL path or GraphQL operation
+   - Request is transformed into appropriate gRPC call format
+   - gRPC call is made to the relevant microservice
+   - Response is transformed back to HTTP/JSON and returned to client
+
+2. **Authentication & Authorization**:
+   - Gateway extracts JWT token from request headers
+   - Token is verified via Auth Service gRPC call
+   - User identity and permissions are attached to the request context
+   - Requests to protected endpoints are blocked if authentication fails
+   - Role-based access control enforced based on user role
+
+3. **GraphQL Processing**:
+   - Client sends GraphQL query/mutation to the `/graphql` endpoint
+   - Apollo Server parses and validates the GraphQL operation
+   - Resolvers map GraphQL operations to gRPC service calls
+   - Multiple microservice calls may be combined for a single GraphQL request
+   - Results are assembled according to GraphQL schema and returned
+
+4. **API Versioning & Documentation**:
+   - REST endpoints follow versioning convention (e.g., `/v1/api/...`)
+   - Swagger/OpenAPI documentation auto-generated for REST API
+   - GraphQL schema provides built-in documentation with introspection
+   - Deprecation notices included for outdated endpoints
+
+Example of API Gateway resolver implementation:
+
+```javascript
+// GraphQL resolver that communicates with the Trip Service via gRPC
+const trajetResolvers = {
+  Query: {
+    trajet: async (_, { id }, context) => {
+      try {
+        // Validate authentication if needed
+        if (context.requireAuth) {
+          // Check if the user is authenticated
+          if (!context.user) {
+            return { 
+              success: false, 
+              message: 'Authentication required' 
+            };
+          }
+        }
+        
+        // Make gRPC call to Trip Service
+        const response = await trajetClient.getTrajetById({ id });
+        return response;
+      } catch (error) {
+        console.error('GraphQL trajet query error:', error);
+        return { 
+          success: false, 
+          message: 'Error retrieving trip details' 
+        };
+      }
+    },
+    
+    trajets: async (_, { filters }, context) => {
+      try {
+        // Transform GraphQL filters to gRPC request format
+        const gRpcFilters = {
+          depart: filters?.depart || '',
+          destination: filters?.destination || '',
+          dateDepart: filters?.dateDepart || '',
+          placesMinimum: filters?.placesMinimum || 1,
+          prixMax: filters?.prixMax || 0
+        };
+        
+        // Make gRPC call to Trip Service
+        const response = await trajetClient.getAllTrajets(gRpcFilters);
+        
+        // Transform response if needed
+        return {
+          success: response.success,
+          message: response.message,
+          trajets: response.trajets || []
+        };
+      } catch (error) {
+        console.error('GraphQL trajets query error:', error);
+        return { 
+          success: false, 
+          message: 'Error retrieving trips', 
+          trajets: [] 
+        };
+      }
+    }
+  },
+  
+  Mutation: {
+    createTrajet: async (_, { input }, context) => {
+      // Check authentication
+      if (!context.user) {
+        return { 
+          success: false, 
+          message: 'Authentication required' 
+        };
+      }
+      
+      // Validate user role
+      if (context.user.role !== 'conducteur') {
+        return { 
+          success: false, 
+          message: 'Only drivers can create trips' 
+        };
+      }
+      
+      try {
+        // Add user info to the trip data
+        const trajetData = {
+          ...input,
+          conducteurId: context.user.id,
+          conducteurNom: context.user.username
+        };
+        
+        // Make gRPC call to Trip Service
+        const response = await trajetClient.createTrajet(trajetData);
+        
+        // Log successful trip creation
+        if (response.success) {
+          kafkaProducer.send({
+            topic: 'trip-events',
+            messages: [{
+              value: JSON.stringify({
+                eventType: 'trip_created',
+                serviceId: 'api-gateway',
+                userId: context.user.id,
+                trajetId: response.trajet.id,
+                timestamp: Date.now()
+              })
+            }]
+          });
+        }
+        
+        return response;
+      } catch (error) {
+        console.error('GraphQL createTrajet mutation error:', error);
+        return { 
+          success: false, 
+          message: 'Error creating trip' 
+        };
+      }
+    }
   }
 };
 ```
