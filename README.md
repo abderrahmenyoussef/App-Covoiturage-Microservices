@@ -19,6 +19,9 @@ A modern carpooling platform built using microservices architecture, enabling us
   - [REST Endpoints](#rest-endpoints)
   - [GraphQL API](#graphql-api)
 - [Authentication Flow](#authentication-flow)
+- [Trip Service Flow](#trip-service-flow)
+- [AI Service Flow](#ai-service-flow)
+- [Log Service Flow](#log-service-flow)
 - [User Journey](#user-journey)
 - [Installation & Setup](#installation--setup)
 
@@ -73,6 +76,63 @@ This approach provides:
 - Efficient binary serialization
 - Stream support for real-time updates
 - Language-agnostic communication (Node.js services can communicate with Python AI service)
+
+### GraphQL/REST Communication Flow
+
+The client application communicates with the API Gateway using both REST and GraphQL APIs, offering flexibility and optimized data fetching:
+
+#### REST API Communication
+- **Client → API Gateway**: The Angular client makes HTTP requests to the Express-based API Gateway endpoints following RESTful principles.
+- **Implementation**:
+  - Client uses Angular's HttpClient service to make HTTP calls
+  - API Gateway exposes RESTful endpoints with Express routers
+  - Authorization handled via JWT tokens in HTTP headers
+  - Follows standard HTTP methods (GET, POST, PUT, DELETE) and status codes
+
+#### GraphQL API Communication
+- **Client → API Gateway**: The Angular client sends GraphQL queries and mutations to a single `/graphql` endpoint.
+- **Implementation**:
+  - Client uses Apollo Client to handle GraphQL operations
+  - API Gateway implements Apollo Server to process GraphQL requests
+  - GraphQL schema defines available queries and mutations
+  - Resolvers in API Gateway translate GraphQL operations to gRPC calls to microservices
+  - Batched queries reduce network overhead by combining multiple data requirements
+
+#### Benefits of Dual API Approach
+- **REST**: Simple, widely understood, excellent for CRUD operations
+- **GraphQL**: Solves over-fetching/under-fetching, allows front-end to specify exact data needs
+- **Choice**: Developers can choose the best approach depending on the use case
+- **Flexibility**: Complex dashboards use GraphQL, simple forms use REST
+
+### Kafka Event Flow
+
+The application uses Kafka for event-driven communication between services, primarily for logging and monitoring:
+
+#### Event Production
+- **Services → Kafka**: Each service (Auth, Trip, AI) produces events to Kafka topics when significant actions occur
+- **Event Types**:
+  - Authentication events (login, logout, registration)
+  - Trip events (creation, update, deletion, booking)
+  - System events (errors, warnings, service status)
+
+#### Event Consumption
+- **Kafka → Log Service**: The Log Service consumes all events from relevant Kafka topics
+- **Processing**:
+  - Events are formatted with standardized structure
+  - Logs saved to files with different levels (info, warn, error)
+  - Important events trigger alerts or notifications
+
+#### Implementation Details
+- **Producer Configuration**: Services use Kafka producers with specified retry and batch settings
+- **Consumer Groups**: Log Service uses consumer groups to ensure each message is processed once
+- **Topic Organization**: Different topics for different event categories with appropriate partitioning
+- **Message Format**: JSON structure with metadata, timestamp, service ID, and payload
+
+#### Benefits
+- **Loose Coupling**: Services don't need direct knowledge of logging infrastructure
+- **Scalability**: Kafka's distributed nature allows scaling of both producers and consumers
+- **Reliability**: Message persistence ensures no events are lost even if Log Service is temporarily down
+- **Real-time Analysis**: Enables real-time monitoring and alerting based on event streams
 
 ## Components
 
@@ -469,6 +529,242 @@ const authenticate = async (req, res, next) => {
       success: false, 
       message: 'Authentication error' 
     });
+  }
+};
+```
+
+## Trip Service Flow
+
+The Trip Service manages the core functionality of creating, updating, searching, and booking trips:
+
+1. **Trip Creation**:
+   - Driver submits trip details via client
+   - API Gateway forwards request to Trip Service
+   - Trip Service validates input and creates trip in MongoDB
+   - Price recommendation requested from AI Service via gRPC
+   - Trip creation event sent to Kafka for logging
+
+2. **Trip Search & Filtering**:
+   - User submits search parameters (location, date, seats)
+   - API Gateway forwards search to Trip Service
+   - Trip Service queries MongoDB with filters
+   - Results returned with pagination for large result sets
+
+3. **Trip Booking Process**:
+   - Passenger selects trip and number of seats
+   - API Gateway forwards booking request to Trip Service
+   - Trip Service validates availability and creates reservation
+   - Updates available seats count
+   - Booking event sent to Kafka for logging
+   - Both passenger and driver notified of booking
+
+4. **Booking Cancellation**:
+   - Passenger requests cancellation for a booking
+   - Trip Service validates cancellation eligibility
+   - Removes reservation and restores available seats
+   - Cancellation event sent to Kafka for logging
+
+Example of trip booking implementation:
+
+```javascript
+const bookTrajet = async (trajetId, bookingData) => {
+  try {
+    // Find the trip by ID
+    const trajet = await Trajet.findById(trajetId);
+    if (!trajet) {
+      return { 
+        success: false, 
+        message: 'Trajet non trouvé' 
+      };
+    }
+    
+    // Validate seat availability
+    if (trajet.placesDisponibles < bookingData.places) {
+      return { 
+        success: false, 
+        message: 'Pas assez de places disponibles' 
+      };
+    }
+    
+    // Create reservation with unique ID
+    const reservationId = uuidv4();
+    const newReservation = {
+      _id: reservationId,
+      passagerId: bookingData.passagerId,
+      passagerNom: bookingData.passagerNom,
+      places: bookingData.places,
+      dateReservation: new Date()
+    };
+    
+    // Update trip with new reservation and seat counts
+    trajet.reservations.push(newReservation);
+    trajet.placesReservees += bookingData.places;
+    trajet.placesDisponibles -= bookingData.places;
+    await trajet.save();
+    
+    // Emit booking event to Kafka
+    producer.send({
+      topic: 'booking-events',
+      messages: [{
+        value: JSON.stringify({
+          eventType: 'booking_created',
+          trajetId,
+          reservation: newReservation
+        })
+      }]
+    });
+    
+    return {
+      success: true,
+      message: 'Réservation créée avec succès',
+      reservation: newReservation,
+      trajet: {
+        id: trajet._id,
+        placesDisponibles: trajet.placesDisponibles,
+        placesReservees: trajet.placesReservees
+      }
+    };
+  } catch (error) {
+    console.error('Erreur lors de la réservation:', error);
+    return { success: false, message: 'Erreur lors de la réservation' };
+  }
+};
+```
+
+## AI Service Flow
+
+The AI Service provides intelligent price predictions for trips using machine learning:
+
+1. **Model Training**:
+   - Historical trip data collected and preprocessed
+   - Features extracted (distance, seats, time of day, etc.)
+   - Linear regression model trained on dataset
+   - Model evaluated and tuned for accuracy
+   - Final model serialized with joblib and stored
+
+2. **Price Prediction Process**:
+   - Trip Service or API Gateway sends prediction request via gRPC
+   - AI Service deserializes the prediction model
+   - Input features processed and normalized
+   - Model makes price prediction
+   - Result returned with confidence level
+   - Prediction requests logged for model improvement
+
+3. **Model Updating**:
+   - New trip data periodically collected
+   - Model retrained with expanded dataset
+   - Model performance evaluated against previous version
+   - Updated model deployed if performance improves
+
+Example of the price prediction implementation in Python:
+
+```python
+class PredictionServiceServicer(ia_pb2_grpc.PredictionServiceServicer):
+    def PredictPrice(self, request, context):
+        """
+        Implementation of the PredictPrice method defined in the proto file
+        Called by Trip Service via gRPC
+        """
+        if model is None:
+            return ia_pb2.PricePredictionResponse(
+                success=False,
+                message="Prediction model could not be loaded",
+                prixEstime=0.0
+            )
+        
+        try:
+            # Make prediction with the model
+            places_disponibles = np.array([[request.placesDisponibles]])
+            predicted_price = model.predict(places_disponibles)[0]
+            predicted_price = round(predicted_price, 3)
+            
+            # Build location-aware response message
+            location_info = ""
+            if request.depart and request.destination:
+                location_info = f" from {request.depart} to {request.destination}"
+            
+            return ia_pb2.PricePredictionResponse(
+                success=True,
+                message=f"Estimated price for {request.placesDisponibles} available seats{location_info}",
+                prixEstime=float(predicted_price)
+            )
+        except Exception as e:
+            print(f"Price prediction error: {e}")
+            return ia_pb2.PricePredictionResponse(
+                success=False,
+                message=f"Error during price prediction: {str(e)}",
+                prixEstime=0.0
+            )
+```
+
+## Log Service Flow
+
+The Log Service centralizes logging and monitoring across all microservices:
+
+1. **Event Collection**:
+   - Services produce events to Kafka topics
+   - Log Service consumes events from multiple topics
+   - Events categorized by type and severity
+   - Structured data extracted from events
+
+2. **Log Processing**:
+   - Events enriched with metadata (timestamp, service name, environment)
+   - Logs formatted according to standardized schema
+   - Different log levels handled appropriately (info, warn, error)
+   - Log files rotated and managed for efficient storage
+
+3. **Alerting & Monitoring**:
+   - Critical errors flagged for immediate attention
+   - Threshold-based alerts for repeated errors
+   - Service health metrics derived from log patterns
+   - Periodic summary reports generated
+
+Example of Kafka consumer implementation in Log Service:
+
+```javascript
+const setupKafkaConsumer = async () => {
+  try {
+    await consumer.connect();
+    
+    // Subscribe to multiple topics
+    await consumer.subscribe({ 
+      topics: ['auth-events', 'trip-events', 'system-events'], 
+      fromBeginning: true 
+    });
+    
+    await consumer.run({
+      eachMessage: async ({ topic, partition, message }) => {
+        try {
+          const eventData = JSON.parse(message.value.toString());
+          const { eventType, serviceId, timestamp, payload, level = 'info' } = eventData;
+          
+          // Log with appropriate level
+          logger.log({
+            level,
+            message: `${eventType} from ${serviceId}`,
+            eventType,
+            serviceId,
+            timestamp: timestamp || Date.now(),
+            topic,
+            partition,
+            payload
+          });
+          
+          // Trigger alerts for error-level events
+          if (level === 'error') {
+            await alertService.triggerAlert(eventData);
+          }
+          
+        } catch (error) {
+          logger.error('Error processing Kafka message', { error: error.message });
+        }
+      }
+    });
+    
+    console.log('Kafka consumer started successfully');
+  } catch (error) {
+    console.error('Failed to start Kafka consumer:', error);
+    process.exit(1);
   }
 };
 ```
